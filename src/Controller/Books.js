@@ -1,12 +1,13 @@
 import { DbConfig } from "../Config/db.config";
+import { compare } from "bcrypt";
 
 export class BookController {
     async addBook (req, res) {
         const pool = new DbConfig().getPool();
 
-        const { name, isbn, patron, issuedate, author } = req.body;
+        const { name, isbn, issuedate, author } = req.body;
 
-        if (!name || !isbn || !patron || !issuedate || !author) {
+        if (!name || !isbn || !issuedate || !author) {
             return res.status(400).json({ msg: "All fields are required to login" })
         }
 
@@ -15,8 +16,8 @@ export class BookController {
             const pgClient = await pool.connect();
 
             const query = {
-                text: "INSERT INTO Books (name, isbn, patron, issuedate, author) VALUES ($1, $2, $3, $4, $5)",
-                values: [name, isbn, patron,issuedate, author],
+                text: "INSERT INTO Books (name, isbn, issuedate, author) VALUES ($1, $2, $3, $4)",
+                values: [name, isbn,issuedate, author],
             };
 
             await pgClient.query(query);
@@ -31,31 +32,20 @@ export class BookController {
     async deleteBook(req, res) {
         const pool = new DbConfig().getPool();
 
-        const { isbn, phonenumber } = req.body;
+        const { isbn } = req.body;
 
         try {
             
             const pgClient = await pool.connect();
 
-            let query = {
-                text: "SELECT id FROM Admin WHERE phonenumber = $1",
-                values: [phonenumber],
-            }
-
-            const account = await (await pgClient.query(query)).rows[0];
-
-            if (!account) {
-                return res.status(301).json({ msg: "User does not exist"})
-            }
-
-            query = {
+            const query = {
                 text: "DELETE FROM Books WHERE isbn = $1",
                 values: [isbn],
             }
 
             await pgClient.query(query).rows;
             pgClient.release();
-            return res.status(201).json({ msg: "Book deleted from user"})
+            return res.status(201).json({ msg: "Book deleted"})
 
         } catch (error) {
             return res.status(500).json(error)
@@ -88,32 +78,18 @@ export class BookController {
     async allBooksById (req, res) {
         const pool = new DbConfig().getPool();
 
-        const { phonenumber } = req.body;
-
         try {
             
             const pgClient = await pool.connect();
 
             let query = {
-                text: "SELECT id FROM Admin WHERE phonenumber = $1",
-                values: [phonenumber],
+                text: "SELECT * FROM Books",
             }
 
-            let account = await (await pgClient.query(query)).rows[0];
-
-            if (!account) {
-                return res.status(301).json({  msg: "Invalid credentilas"})
-            }
-
-            query = {
-                text: "SELECT * FROM Books WHERE owner = $1",
-                values: [account.id]
-            }
-
-            account = await (await pgClient.query(query)).rows;
+            let books = await (await pgClient.query(query)).rows;
 
             pgClient.release();
-            return res.status(201).json({ account })
+            return res.status(201).json({ books })
 
         } catch (error) {
             return res.status(500).json(error)
@@ -123,27 +99,43 @@ export class BookController {
     async filter (req, res) {
         const pool = new DbConfig().getPool();
 
-        const { date_1, date_2 } = req.body;
+        const { issuedate, author } = req.body;
 
         try {
             
-            const pgClient = await pool.connect();
+                const pgClient = await pool.connect();
 
-            const query = {
-                text: "SELECT * FROM Books WHERE issuedate >= &1 AND issuedate < $2",
-                values: [date_1, date_2],
+                const queryDate = {
+                    text: "SELECT * FROM Books WHERE issuedate = $1",
+                    values: [issuedate],
+                }
+        
+                const queryAuthor = {
+                    text: "SELECT * FROM Books WHERE author = $1",
+                    values: [author],
+                }
+                // console.log(queryAuthor);
+    
+                const bookIssue = await (await pgClient.query(queryDate)).rows[0];
+                const isValidDate = await compare(issuedate, bookIssue.issuedate);
+                console.log("dsd");
+
+                const bookAuthor = await (await pgClient.query(queryAuthor)).rows[0];
+                const isValidAuthor = await compare(author, bookAuthor.author);
+                console.log(bookAuthor);
+
+                if(!isValidDate || !isValidAuthor) {
+                    pgClient.release();
+                    return res.status(201).json({ bookIssue });
+                } else {
+                    pgClient.release();
+                    return res.status(400).json({ msg: "invalid" }); 
+                }
+                
+    
+            } catch (error) {
+                return res.status(500).json(error)
             }
 
-            const account = await (await pgClient.query(query)).rows;
-
-            pgClient.release();
-            return res.status(201).json({ account });
-            
-
-        } catch (error) {
-            return res.status(500).json(error)
-        }
     }
 }
-
-// SELECT * FROM Books WHERE issuedate >= '2021-01-01' AND issuedate < '2022-01-01';

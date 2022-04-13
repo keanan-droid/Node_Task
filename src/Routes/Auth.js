@@ -16,4 +16,8 @@ router.post("/api/reset", json(), (req, res) => {
     Controller.reset(req, res);
 });
 
+router.post("/api/update", json(), (req, res) => {
+    Controller.update(req, res);
+});
+
 export default router;
