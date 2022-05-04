@@ -1,14 +1,15 @@
 import { Router, json } from "express";
 import { BookController } from "../Controller/Books"
+import { IsAdmin } from "../Middlewares/isAdmin";
 
 const router = Router();
 const Controller = new BookController();
 
-router.post("/api/inventory", json(), (req, res) => {
+router.post("/api/inventory", json(), IsAdmin, (req, res) => {
     Controller.addBook(req, res);
 });
 
-router.delete("/api/inventory", json(), (req, res) => {
+router.delete("/api/inventory", json(), IsAdmin, (req, res) => {
     Controller.deleteBook(req, res);
 });
 
