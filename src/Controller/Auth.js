@@ -41,7 +41,7 @@ export class AuthController {
                 // port: 587,
                 // secure: false, 
                 auth: {
-                    user: 'keananshawnswartz@gmail.com', // generated ethereal user
+                    user: '', // generated ethereal user
                     pass: '', // generated ethereal password
                 },
             });
