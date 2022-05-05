@@ -42,7 +42,7 @@ export class AuthController {
                 // secure: false, 
                 auth: {
                     user: 'keananshawnswartz@gmail.com', // generated ethereal user
-                    pass: 'JQwSEkG5Th0j6NXO', // generated ethereal password
+                    pass: '', // generated ethereal password
                 },
             });
 
